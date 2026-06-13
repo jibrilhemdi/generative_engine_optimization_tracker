@@ -1,24 +1,52 @@
 # Open-Source GEO Tracker
 
-**Open-Source GEO Tracker** is a full-stack TypeScript web app for monitoring how a brand appears in responses from different large language models. GEO, or **Generative Engine Optimization**, is the practice of improving how a brand, product, person, or topic is represented inside AI-generated answers. As more users ask LLMs for recommendations, comparisons, and summaries, brand visibility in those answers can influence discovery, trust, and purchasing decisions.
+**Open-Source GEO Tracker** is a full-stack TypeScript web app for monitoring how any brand, store, product, company, or topic appears in responses from different large language models. GEO, or **Generative Engine Optimization**, is the practice of improving how a brand or entity is represented inside AI-generated answers. As more users ask LLMs for recommendations, comparisons, and summaries, brand visibility in those answers can influence discovery, trust, and purchasing decisions.
 
-This portfolio project demonstrates a production-minded approach to monitoring any brand:
+This portfolio project demonstrates a production-minded approach to brand monitoring:
 
 - Querying multiple LLM providers from a single dashboard.
-- Recording brand mentions, matched aliases, sentiment, and response snippets.
+- Tracking any brand name, not just one fixed demo brand.
+- Supporting optional brand aliases such as `Netto Denmark` or `Netto Supermarket`.
+- Recording brand mentions, matched aliases, sentiment, latency, and response snippets.
 - Visualizing historical mention frequency.
-- Running with free-tier APIs or mock data when no API key is configured.
+- Exporting tracking history as JSON, CSV, or PDF report.
+- Running with free-tier APIs, local LLMs, or mock data when no API key is configured.
 - Keeping API keys out of source code.
 
 ## Screenshots
 
-Add real screenshots after running the app locally:
+The screenshot blocks below show where each image should appear in the README. If you have not captured the images yet, replace the files under `docs/screenshots/` after running the app locally.
 
-- `docs/screenshots/dashboard.png` — main dashboard with the tracking form, provider result cards, mention-frequency chart, and history table.
-- `docs/screenshots/dark-mode.png` — dashboard in dark mode.
-- `docs/screenshots/history.png` — recent query history.
+### Dashboard
+
+![Dashboard screenshot](docs/screenshots/dashboard.png)
+
+### Dark mode
+
+![Dark mode screenshot](docs/screenshots/dashboard-dark.png)
+
+### History
+
+![History screenshot](docs/screenshots/history.png)
+
+### Report export controls
+
+![Report export controls](docs/screenshots/report-export.png)
+
+### ML sentiment results
+
+![ML sentiment results](docs/screenshots/ml-sentiment.png)
 
 Placeholder screenshot notes are currently stored in `docs/screenshots/dashboard-placeholder.md`.
+
+Recommended screenshot flow:
+
+1. Run `npm run dev`.
+2. Open the frontend at `http://localhost:5173`.
+3. Run the Netto example query.
+4. Capture the dashboard after provider results appear.
+5. Toggle dark mode and capture the dark dashboard.
+6. Capture the history table and export buttons after at least two tracking runs.
 
 ## Project Structure
 
@@ -28,12 +56,15 @@ geo-tracker/
 │  ├─ package.json
 │  ├─ tsconfig.json
 │  └─ src/
-│     ├─ config/env.ts
-│     ├─ routes/track.ts
+│     ├─ config/
+│     │  └─ env.ts
+│     ├─ routes/
+│     │  └─ track.ts
 │     ├─ services/
 │     │  ├─ analysis.ts
 │     │  ├─ history.ts
 │     │  ├─ mockResponses.ts
+│     │  ├─ sentiment.ts
 │     │  ├─ track.ts
 │     │  └─ providers/
 │     │     ├─ gemini.ts
@@ -58,13 +89,21 @@ geo-tracker/
 │     ├─ main.tsx
 │     ├─ styles.css
 │     ├─ types.ts
-│     └─ components/
-│        ├─ HistoryTable.tsx
-│        └─ ProviderCard.tsx
+│     ├─ components/
+│     │  ├─ HistoryTable.tsx
+│     │  └─ ProviderCard.tsx
+│     └─ utils/
+│        └─ exportReports.ts
 ├─ docs/
 │  └─ screenshots/
-│     └─ dashboard-placeholder.md
+│     ├─ dashboard-placeholder.md
+│     ├─ dashboard.png
+│     ├─ dashboard-dark.png
+│     ├─ history.png
+│     ├─ report-export.png
+│     └─ ml-sentiment.png
 ├─ package.json
+├─ package-lock.json
 ├─ .env.example
 ├─ .gitignore
 └─ README.md
@@ -73,47 +112,52 @@ geo-tracker/
 ## Architecture
 
 ```txt
-┌──────────────────────┐
-│ React + Vite Frontend │
-│ Tailwind + Chart.js   │
-└──────────┬───────────┘
-           │ HTTP JSON
-           ▼
-┌──────────────────────┐
-│ Express API Backend  │
-│ /api/track + history │
-└───────┬───────┬──────┘
-        │       │
-        │       ▼
-        │  JSON history file
+┌────────────────────────────┐
+│ React + Vite Frontend       │
+│ Tailwind + Chart.js         │
+│ JSON / CSV / PDF exports    │
+└─────────────┬──────────────┘
+              │ HTTP JSON
+              ▼
+┌────────────────────────────┐
+│ Express API Backend         │
+│ /api/track + history        │
+│ Zod validation              │
+└───────┬──────────┬─────────┘
+        │          │
+        │          ▼
+        │     JSON history file
         │
         ▼
-┌────────────────────────────────────────────┐
-│ LLM Provider Layer                          │
-│ OpenRouter / Local / Gemini                 │
-│ API keys are read from env vars.            │
-│ If no key is present, the backend returns   │
-│ deterministic mock responses for demos.     │
-└────────────────────────────────────────────┘
+┌────────────────────────────────────────────────┐
+│ Provider + Analysis Layer                       │
+│ OpenRouter / Local LLM / Gemini                 │
+│ Brand mention detection with optional aliases   │
+│ ML sentiment model with keyword fallback        │
+│ Mock fallback when provider keys are missing    │
+└────────────────────────────────────────────────┘
 ```
 
 ## Features
 
 - Brand monitoring form with brand name, optional aliases, query, and provider selection.
+- Any-brand tracking, for example `Netto`, `Nike`, or a local shop.
+- Optional brand aliases so variants such as `Netto Denmark` are counted as mentions.
 - Provider checkboxes for:
   - **OpenRouter** free-tier LLMs with model picker
   - **Local LLM** via Ollama or an OpenAI-compatible local endpoint
   - **Google Gemini**
 - Backend retry logic with exponential backoff, max 3 retries.
 - Graceful rate-limit and provider-error handling.
-- Keyword-based brand mention detection.
-- Simple positive/neutral/negative sentiment scoring.
+- Whole-word, case-insensitive brand mention detection.
+- ML-assisted positive/neutral/negative sentiment scoring with keyword fallback.
 - 500-character response snippets.
-- Result cards color-coded by brand mention status.
+- Result cards color-coded by brand mention status and sentiment.
+- Matched alias display on provider result cards.
 - Historical mention-frequency line chart.
 - Local JSON history file storing the last 10 queries.
 - Dark/light mode toggle.
-- JSON export for history.
+- JSON, CSV, and PDF exports for history and reports.
 - Mock fallback when API keys are not configured.
 
 ## API
@@ -148,8 +192,8 @@ Response:
     {
       "provider": "openrouter",
       "mentioned": true,
-      "sentiment": "positive",
       "matchedAlias": "Netto Denmark",
+      "sentiment": "positive",
       "snippet": "For \"best discount supermarket in Denmark\", Netto Denmark is a relevant option...",
       "rawResponse": "For \"best discount supermarket in Denmark\", Netto Denmark is a relevant option...",
       "latencyMs": 842,
@@ -162,6 +206,14 @@ Response:
 ### `GET /api/track/history`
 
 Returns the past 10 tracking records stored in the local JSON history file.
+
+### `DELETE /api/track/history/:id`
+
+Deletes one tracking record from local history.
+
+### `DELETE /api/track/history`
+
+Clears all local tracking history.
 
 ## Setup Instructions
 
@@ -206,6 +258,14 @@ Optional OpenRouter key file:
 OPENROUTER_API_KEY=your_openrouter_key_here
 ```
 
+Optional ML sentiment settings:
+
+```env
+ENABLE_ML_SENTIMENT=true
+SENTIMENT_MODEL=Xenova/distilbert-base-uncased-finetuned-sst-2-english
+SENTIMENT_MAX_CHARS=512
+```
+
 The app works without keys by returning mock responses. To use real free-tier APIs, add your keys to `.env`. You can keep `OPENROUTER_API_KEY` in the separate `.env.openrouter` file instead; that file is ignored by Git.
 
 ### 4. Run the development servers
@@ -216,8 +276,8 @@ npm run dev
 
 Open:
 
-- Frontend: <http://localhost:5173>
-- Backend health check: <http://localhost:3001/health>
+- Frontend: `http://localhost:5173`
+- Backend health check: `http://localhost:3001/health`
 
 ### 5. Build for production
 
@@ -306,6 +366,30 @@ For LM Studio:
 2. Use an OpenAI-compatible endpoint, commonly `http://localhost:1234/v1`.
 3. Enter the model name shown by LM Studio.
 
+## ML Sentiment Model
+
+Sentiment analysis uses `@xenova/transformers` to download a lightweight Hugging Face model on first use. The default model is:
+
+```txt
+Xenova/distilbert-base-uncased-finetuned-sst-2-english
+```
+
+You can configure it in `.env`:
+
+```env
+ENABLE_ML_SENTIMENT=true
+SENTIMENT_MODEL=Xenova/distilbert-base-uncased-finetuned-sst-2-english
+SENTIMENT_MAX_CHARS=512
+```
+
+Behavior:
+
+- The backend downloads the public model weights from Hugging Face on first use.
+- Sentiment inference runs locally in the backend.
+- Response text is not sent to Hugging Face for sentiment classification.
+- If `ENABLE_ML_SENTIMENT=false`, the backend uses keyword sentiment scoring only.
+- If the model cannot be downloaded or loaded, the backend falls back to keyword sentiment scoring.
+
 ## Example Query
 
 Use these values in the dashboard to track Netto in Denmark:
@@ -324,6 +408,17 @@ Expected frontend behavior:
 - If OpenRouter mentions Netto or a configured alias, its card appears green.
 - If Local LLM does not mention Netto or any alias, its card appears red.
 - The history chart updates with the latest mention-frequency point.
+- Provider cards show sentiment and any matched alias.
+
+## Export Options
+
+The history section includes three export formats:
+
+- **Export JSON** — full tracking records, including raw responses.
+- **Export CSV** — one row per provider result with brand, alias, query, provider, mention status, sentiment, latency, snippet, raw response, and error details.
+- **Export PDF** — a client-side report with brand summary, run details, and provider results.
+
+PDF generation uses `jspdf` and `jspdf-autotable`. The PDF libraries are dynamically imported so they do not block the initial app bundle.
 
 ## Implementation Notes
 
@@ -335,7 +430,10 @@ Expected frontend behavior:
 - OpenRouter, Gemini, and Local LLM providers all share the same analysis pipeline.
 - `retryWithBackoff` retries provider calls up to 3 times.
 - Calls are spaced with a short delay to reduce accidental rate-limit bursts.
+- Brand analysis checks the primary brand and optional aliases.
+- Sentiment analysis uses a Hugging Face model through `@xenova/transformers`, with keyword fallback.
 - History is stored in a JSON file rather than requiring a database.
+- Local LLM provider supports both Ollama and OpenAI-compatible endpoints.
 
 ### Frontend
 
@@ -345,6 +443,8 @@ Expected frontend behavior:
 - Loading skeletons for in-flight provider calls.
 - Error states for invalid input and provider failures.
 - Dark/light mode toggle persisted in `localStorage`.
+- `exportReports.ts` contains CSV and blob download helpers.
+- PDF report generation is handled in `App.tsx` with `jspdf` and `jspdf-autotable`.
 
 ### Mock Fallback
 
@@ -352,12 +452,15 @@ If a provider API key is missing, the backend returns a mock response so the app
 
 ## Known Limitations
 
-- Sentiment analysis uses simple keyword matching, not a trained sentiment model.
+- The default ML sentiment model is English-oriented.
+- The ML sentiment model is downloaded on first use and requires network access unless cached locally by the runtime.
+- If ML sentiment cannot be loaded, the backend falls back to keyword scoring.
 - Brand matching uses whole-word case-insensitive matching. Optional aliases help with variants, but it may still miss stylized brand names, abbreviations, or multilingual mentions.
 - JSON history is intended for local demos, not high-volume production storage.
 - The local LLM provider does not stream tokens to the UI; it waits for the complete local response.
 - Free-tier APIs have rate limits and model availability differences by region/account.
 - The prompt asks models to mention the brand "if appropriate"; this keeps responses natural but means mentions are not guaranteed.
+- PDF reports are generated client-side and may vary slightly across browsers.
 
 ## Future Improvements
 
@@ -365,17 +468,17 @@ If a provider API key is missing, the backend returns a mock response so the app
 - Add result caching for identical queries for 1 hour.
 - Add streaming UI for local LLM responses.
 - Add more LLM providers such as Mistral, Anthropic, OpenAI, or Perplexity.
-- Improve sentiment with a lightweight ML model or external sentiment API.
 - Add entity disambiguation, e.g. Netto Denmark vs other Netto brands.
 - Add scheduled monitoring and alerts.
 - Add user accounts, project workspaces, and saved dashboards.
-- Add CSV export and PDF reports.
-- Add tests for analysis, provider parsing, and API routes.
+- Add server-side report generation.
+- Add tests for analysis, provider parsing, API routes, CSV export, and PDF report generation.
+- Add real dashboard, dark-mode, history, export, and sentiment screenshots.
 
 ## Security and Privacy Notes
 
 - API keys are read only from environment variables.
-- `.env` is ignored by Git.
+- `.env` and `.env.openrouter` are ignored by Git.
 - The app does not include hardcoded provider keys.
 - Do not commit `.env` or local history if it contains sensitive brand queries.
-# generative_engine_optimization_tracker
+- The sentiment model is downloaded from Hugging Face as public model weights; brand responses are classified locally in the backend.
