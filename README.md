@@ -15,38 +15,18 @@ This portfolio project demonstrates a production-minded approach to brand monito
 
 ## Screenshots
 
-The screenshot blocks below show where each image should appear in the README. If you have not captured the images yet, replace the files under `docs/screenshots/` after running the app locally.
-
 ### Dashboard
 
 ![Dashboard screenshot](docs/screenshots/dashboard.png)
 
 ### Dark mode
 
-![Dark mode screenshot](docs/screenshots/dashboard-dark.png)
+![Dark mode screenshot](docs/screenshots/dark-mode.png)
 
 ### History
 
 ![History screenshot](docs/screenshots/history.png)
 
-### Report export controls
-
-![Report export controls](docs/screenshots/report-export.png)
-
-### ML sentiment results
-
-![ML sentiment results](docs/screenshots/ml-sentiment.png)
-
-Placeholder screenshot notes are currently stored in `docs/screenshots/dashboard-placeholder.md`.
-
-Recommended screenshot flow:
-
-1. Run `npm run dev`.
-2. Open the frontend at `http://localhost:5173`.
-3. Run the Netto example query.
-4. Capture the dashboard after provider results appear.
-5. Toggle dark mode and capture the dark dashboard.
-6. Capture the history table and export buttons after at least two tracking runs.
 
 ## Project Structure
 
